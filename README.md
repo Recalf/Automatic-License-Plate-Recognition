@@ -2,7 +2,7 @@
 
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
-- **End‑to‑end flow**: raw video → **YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
+- **End‑to‑end flow**: raw video → **Custom YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
 - **Real‑time aware**: explicit frame pacing and catch‑up logic to keep live streams in sync by **dropping frames intelligently** instead of building latency.
 - **Robust OCR layer**: per‑track temporal aggregation, “best frame” selection, and strong text rules (unique‑character checks, digit/letter balance, minimum length) to cut down false reads.
 - **Data‑ready outputs**: structured DB schema plus run‑organized plate crops so detections are easy to query, debug, and feed into dashboards or downstream services.
