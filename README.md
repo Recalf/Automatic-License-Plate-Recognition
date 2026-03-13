@@ -29,84 +29,6 @@ This is a **full, production‑style license plate recognition system**, not jus
 The sections below cover environment/DB setup and then dive deep into the `engine.py` internals.
 
 ---
-
-### 1. Install dependencies
-
-You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
-
-#### Option A: Conda (recommended, includes CUDA for YOLO)
-
-The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.10, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
-
-```bash
-conda env create -f environment.yaml
-conda activate lp
-```
-
-- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=13.0` (CUDA 13.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` for CUDA 12 or `pytorch-cuda=11.8` for CUDA 11.
-- **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
-
-
-#### Option B: Pip only (`requirements.txt`)
-
-If you prefer a venv or already have Python 3.10+ and PyTorch (with or without CUDA):
-
-```bash
-pip install -r requirements.txt
-```
-
-- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. It does **not** install PyTorch or CUDA; 
-- **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
-
-
-> **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT on purpose.
-
-### 2. MySQL setup
-
-Create a database and a table for decoded plate records. The **current engine** (`engine.py`) inserts:
-
-- `track_id` – integer track identifier (ByteTrack ID)
-- `plate_text` – normalized plate text
-- `best_width` – width (in pixels) of the best plate crop used for DB insert
-- `ts` – timestamp at insert time
-- `image_path` – path to stored cropped plate image
-
-An example table schema:
-
-```sql
-CREATE TABLE plates (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  track_id INT NOT NULL,
-  plate_text VARCHAR(32) NOT NULL,
-  best_width INT NOT NULL,
-  ts DATETIME NOT NULL,
-  image_path VARCHAR(255) NOT NULL
-);
-```
-
-Configure connectivity by editing DB constants in the front‑end scripts:
-
-- `stream_inference.py`, `stream_headless_inference.py`, `offline_headless_inference.py`
-
-### 3. Download / place model weights
-
-By default, the detector is expected at:
-
-- `runs/detect/train9/weights/last.pt`
-
-You can either:
-
-- Train your own detector with `train.py` (see below), or
-- Drop in a compatible YOLO weights file and point the config constants to it.
-
-The OCR model name is configured as:
-
-- `"cct-s-v1-global-model"` in the entrypoints, via `LicensePlateRecognizer("cct-s-v1-global-model")`
-
-Make sure the OCR backend you are using supports this model name.
-
----
-
 ## Repository Overview
 
 - **`requirements.txt`** – Pip dependencies (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Use with `pip install -r requirements.txt` if you already have PyTorch/CUDA.
@@ -121,113 +43,6 @@ Make sure the OCR backend you are using supports this model name.
 - `utils/export_TensorRT.py` – helper for exporting models to TensorRT (optional).
 
 ---
-
-## Training the YOLO License Plate Detector
-
-The training script is intentionally minimal and uses Ultralytics’ high‑level API:
-
-- **Script**: `train.py`
-- **Key hyperparameters**:
-  - `data="data/data.yaml"` – path to your YOLO dataset configuration
-  - `epochs=50`
-  - `patience=7`
-  - `batch=14`
-  - `imgsz=960`
-  - `save_period=3` – saves model weights every N epochs
-
-Run:
-
-```bash
-python train.py
-```
-
-This will train a model and write checkpoints under a `runs/detect/...` directory (by default `runs/detect/train9/weights/last.pt` is used later in inference scripts).
-
-> **Assumption**: Class index **0** in your dataset corresponds to license plates. The engine explicitly filters detections with `if c != 0: continue`, so plates must be class 0.
-
----
-
-## Inference Entry Points
-
-### 1. `stream_inference.py` – interactive streaming (GUI)
-
-**Purpose**:  
-Video in → real‑time YOLO + ByteTrack + OCR → live overlay window + MySQL + plate crops.
-
-- **Key configs**:
-  - `TRACKER` – e.g. `model/custom_bytetrackv2.yaml`
-  - `VID_IN` – path to input video or camera index
-  - `RESULT_IMAGES_ROOT` – root folder for cropped plate images
-  - `DISPLAY_W`, `DISPLAY_H` – GUI display resolution
-  - `CONF`, `IMGSZ`, `MODEL_WEIGHTS` – YOLO inference settings
-  - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_TABLE`
-  - `OCR_MODEL_NAME`, `MIN_OCR_CHARS_LEN`, `OCR_EVERY_FRAMES`, `AREA_EPS_RATIO`
-  - `MIN_PLATE_W`, `MIN_PLATE_H`
-
-**To run**:
-
-```bash
-python stream_inference.py
-```
-
-Press **Esc** to exit.
-
-Internally wraps:
-
-```python
-run(
-    draw_gui=True,
-    realtime=True,
-    save_video_path=None,
-    ...
-)
-```
-
-### 2. `offline_headless_inference.py` – offline batch, file‑to‑file
-
-**Purpose**:  
-Process a video file **as fast as possible** (no GUI) into:
-
-- An **annotated output video** (`OUT_VIDEO`)
-- Plate crops in `RESULT_IMAGES_ROOT` under an auto‑incremented run directory
-- Plate records in MySQL
-
-Key behavior:
-
-- `draw_gui=False`, `realtime=False` → no pacing, full‑speed processing.
-- `db_pool=True`, `db_pool_size=DB_POOL_SIZE` → MySQL connection pooling for high insert throughput.
-
-Run:
-
-```bash
-python offline_headless_inference.py
-```
-
-### 3. `stream_headless_inference.py` – online, headless streaming
-
-**Purpose**:  
-Real‑time inference **without** GUI or output video:
-
-- Detection + tracking
-- OCR
-- DB inserts
-- Plate crop export
-
-Key behavior:
-
-- `draw_gui=False`, `realtime=True`, `save_video_path=None`.
-- Uses the same `ocr_cache` and DB insertion strategy as other modes.
-
-Run:
-
-```bash
-python stream_headless_inference.py
-```
-
-Configure **DB credentials** before running (they are left blank in the template).
-
----
-
 ## Core Engine Architecture (`engine.py`)
 
 The `run(...)` function in `engine.py` is the **single source of truth** for the pipeline; all front‑ends just configure and call it.
@@ -380,6 +195,189 @@ On exit, all OpenCV handles and DB resources are released.
 - **OCR quality**:
   - The **pre‑processing pipeline** (CLAHE + sharpening) is tuned for typical plate imagery; depending on your region/plates you may want to adjust contrast/sharpening kernels.
   - `MIN_OCR_CHARS_LEN` and uniqueness / digit/letter checks are conservative filters to reduce false positives; you can relax them in controlled environments.
+
+---
+
+### 1. Install dependencies
+
+You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
+
+#### Option A: Conda (recommended, includes CUDA for YOLO)
+
+The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.10, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
+
+```bash
+conda env create -f environment.yaml
+conda activate lp
+```
+
+- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=13.0` (CUDA 13.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` for CUDA 12 or `pytorch-cuda=11.8` for CUDA 11.
+- **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
+
+
+#### Option B: Pip only (`requirements.txt`)
+
+If you prefer a venv or already have Python 3.10+ and PyTorch (with or without CUDA):
+
+```bash
+pip install -r requirements.txt
+```
+
+- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. It does **not** install PyTorch or CUDA; 
+- **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
+
+
+> **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT on purpose.
+
+### 2. MySQL setup
+
+Create a database and a table for decoded plate records. The **current engine** (`engine.py`) inserts:
+
+- `track_id` – integer track identifier (ByteTrack ID)
+- `plate_text` – normalized plate text
+- `best_width` – width (in pixels) of the best plate crop used for DB insert
+- `ts` – timestamp at insert time
+- `image_path` – path to stored cropped plate image
+
+An example table schema:
+
+```sql
+CREATE TABLE plates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  track_id INT NOT NULL,
+  plate_text VARCHAR(32) NOT NULL,
+  best_width INT NOT NULL,
+  ts DATETIME NOT NULL,
+  image_path VARCHAR(255) NOT NULL
+);
+```
+
+Configure connectivity by editing DB constants in the front‑end scripts:
+
+- `stream_inference.py`, `stream_headless_inference.py`, `offline_headless_inference.py`
+
+### 3. Download / place model weights
+
+By default, the detector is expected at:
+
+- `runs/detect/train9/weights/last.pt`
+
+You can either:
+
+- Train your own detector with `train.py` (see below), or
+- Drop in a compatible YOLO weights file and point the config constants to it.
+
+The OCR model name is configured as:
+
+- `"cct-s-v1-global-model"` in the entrypoints, via `LicensePlateRecognizer("cct-s-v1-global-model")`
+
+Make sure the OCR backend you are using supports this model name.
+
+---
+
+## Training the YOLO License Plate Detector
+
+The training script is intentionally minimal and uses Ultralytics’ high‑level API:
+
+- **Script**: `train.py`
+- **Key hyperparameters**:
+  - `data="data/data.yaml"` – path to your YOLO dataset configuration
+  - `epochs=50`
+  - `patience=7`
+  - `batch=14`
+  - `imgsz=960`
+  - `save_period=3` – saves model weights every N epochs
+
+Run:
+
+```bash
+python train.py
+```
+
+This will train a model and write checkpoints under a `runs/detect/...` directory (by default `runs/detect/train9/weights/last.pt` is used later in inference scripts).
+
+> **Assumption**: Class index **0** in your dataset corresponds to license plates. The engine explicitly filters detections with `if c != 0: continue`, so plates must be class 0.
+
+---
+
+## Inference Entry Points
+
+### 1. `stream_inference.py` – interactive streaming (GUI)
+
+**Purpose**:  
+Video in → real‑time YOLO + ByteTrack + OCR → live overlay window + MySQL + plate crops.
+
+- **Key configs**:
+  - `TRACKER` – e.g. `model/custom_bytetrackv2.yaml`
+  - `VID_IN` – path to input video or camera index
+  - `RESULT_IMAGES_ROOT` – root folder for cropped plate images
+  - `DISPLAY_W`, `DISPLAY_H` – GUI display resolution
+  - `CONF`, `IMGSZ`, `MODEL_WEIGHTS` – YOLO inference settings
+  - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_TABLE`
+  - `OCR_MODEL_NAME`, `MIN_OCR_CHARS_LEN`, `OCR_EVERY_FRAMES`, `AREA_EPS_RATIO`
+  - `MIN_PLATE_W`, `MIN_PLATE_H`
+
+**To run**:
+
+```bash
+python stream_inference.py
+```
+
+Press **Esc** to exit.
+
+Internally wraps:
+
+```python
+run(
+    draw_gui=True,
+    realtime=True,
+    save_video_path=None,
+    ...
+)
+```
+
+### 2. `offline_headless_inference.py` – offline batch, file‑to‑file
+
+**Purpose**:  
+Process a video file **as fast as possible** (no GUI) into:
+
+- An **annotated output video** (`OUT_VIDEO`)
+- Plate crops in `RESULT_IMAGES_ROOT` under an auto‑incremented run directory
+- Plate records in MySQL
+
+Key behavior:
+
+- `draw_gui=False`, `realtime=False` → no pacing, full‑speed processing.
+- `db_pool=True`, `db_pool_size=DB_POOL_SIZE` → MySQL connection pooling for high insert throughput.
+
+Run:
+
+```bash
+python offline_headless_inference.py
+```
+
+### 3. `stream_headless_inference.py` – online, headless streaming
+
+**Purpose**:  
+Real‑time inference **without** GUI or output video:
+
+- Detection + tracking
+- OCR
+- DB inserts
+- Plate crop export
+
+Key behavior:
+
+- `draw_gui=False`, `realtime=True`, `save_video_path=None`.
+- Uses the same `ocr_cache` and DB insertion strategy as other modes.
+
+Run:
+
+```bash
+python stream_headless_inference.py
+```
+
+Configure **DB credentials** before running (they are left blank in the template).
 
 ---
 
