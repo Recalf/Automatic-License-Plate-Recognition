@@ -1,0 +1,7 @@
+ultralytics==8.4.21
+fast-plate-ocr==1.0.2
+mysql-connector-python==9.6.0
+opencv-python==4.10.0.84
+numpy>=1.24,<2.3
+protobuf<7
+onnxruntime==1.24.3
