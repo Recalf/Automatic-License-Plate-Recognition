@@ -1,5 +1,9 @@
-## License Plate Detector – Real‑Time YOLO + OCR + MySQL
+![Project Thumbnail](milad-fakurian-sin5WZzF1U0-unsplash.jpg)
 
+# 🎬 2-Minute Live Demo
+https://drive.google.com/file/d/1IhzPm4rtJI3Ok8STFGe_VkJ9gYpvpdsT
+
+# Summary
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
 - **End‑to‑end flow**: raw video → **YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
