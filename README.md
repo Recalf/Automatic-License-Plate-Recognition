@@ -28,18 +28,34 @@ The sections below cover environment/DB setup and then dive deep into the `engin
 
 ### 1. Install dependencies
 
-Create and activate a virtual environment, then install:
+You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
+
+#### Option A: Conda (recommended, includes CUDA for YOLO)
+
+The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.10, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
 
 ```bash
-pip install ultralytics opencv-python numpy mysql-connector-python fast_plate_ocr
+conda env create -f environment.yaml
+conda activate lp
 ```
 
-Optional:
+- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=13.0` (CUDA 13.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` for CUDA 12 or `pytorch-cuda=11.8` for CUDA 11.
+- **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
 
-- `onnxruntime` / `onnxruntime-gpu` (for OCR backend)
-- `pycuda` / `tensorrt` if you use the TensorRT export utility in `utils/export_TensorRT.py`
 
-> **Note**: In `engine.py` a flag `ORT_TENSORRT_UNAVAILABLE=1` is set to avoid slow OCR model loads with TensorRT. You can change this if you know what you’re doing.
+#### Option B: Pip only (`requirements.txt`)
+
+If you prefer a venv or already have Python 3.10+ and PyTorch (with or without CUDA):
+
+```bash
+pip install -r requirements.txt
+```
+
+- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. It does **not** install PyTorch or CUDA; 
+- **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
+
+
+> **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT on purpose.
 
 ### 2. MySQL setup
 
@@ -89,6 +105,8 @@ Make sure the OCR backend you are using supports this model name.
 
 ## Repository Overview
 
+- **`requirements.txt`** – Pip dependencies (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Use with `pip install -r requirements.txt` if you already have PyTorch/CUDA.
+- **`environment.yaml`** – Conda env `lp`: Python 3.10, PyTorch 2.10 + CUDA 13.0, and the same pip deps. Use with `conda env create -f environment.yaml` for a single-command setup.
 - `train.py` – YOLO training entrypoint for the plate detector.
 - `engine.py` – **core engine**: model/DB initialization, frame loop, pacing, detection, ByteTrack ID handling, OCR, temporal filtering, DB inserts, and result image export.
 - `stream_inference.py` – interactive streaming script that wraps `engine.run` with a GUI (FPS + boxes + text).
