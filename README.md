@@ -1,7 +1,7 @@
 ![Project Thumbnail](milad-fakurian-sin5WZzF1U0-unsplash.jpg)
 
 # 🎬 2-Minute Live Demo
-https://drive.google.com/file/d/1IhzPm4rtJI3Ok8STFGe_VkJ9gYpvpdsT
+https://drive.google.com/file/d/17nol3fuDRJbh-lqV7N5qbJxSnosGdA_I
 
 # Summary
 This is a **full, production‑style license plate recognition system**, not just a single model.
