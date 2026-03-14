@@ -26,22 +26,6 @@ This is a **full, production‑style license plate recognition system**, not jus
 - **Headless real‑time stream** – no window, DB + crops: `python stream_headless_inference.py`  
 - **Offline batch (file → file)** – annotated video + DB + crops: `python offline_headless_inference.py`  
 
-The sections below cover environment/DB setup and then dive deep into the `engine.py` internals.
-
----
-## Repository Overview
-
-- **`requirements.txt`** – Pip dependencies (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Use with `pip install -r requirements.txt` if you already have PyTorch/CUDA.
-- **`environment.yaml`** – Conda env `lp`: Python 3.10, PyTorch 2.10 + CUDA 13.0, and the same pip deps. Use with `conda env create -f environment.yaml` for a single-command setup.
-- `train.py` – YOLO training entrypoint for the plate detector.
-- `engine.py` – **core engine**: model/DB initialization, frame loop, pacing, detection, ByteTrack ID handling, OCR, temporal filtering, DB inserts, and result image export.
-- `stream_inference.py` – interactive streaming script that wraps `engine.run` with a GUI (FPS + boxes + text).
-- `offline_headless_inference.py` – file‑to‑file batch processing via `engine.run`, uses DB connection pooling and writes annotated video to `OUT_VIDEO`.
-- `stream_headless_inference.py` – real‑time streaming inference via `engine.run` without any GUI.
-- `model/custom_bytetrackv2.yaml` – ByteTrack tracker configuration used by `engine.run`.
-- `runs/detect/train9/weights/last.pt` – default detector checkpoint path after training (path is configurable in the front‑end scripts).
-- `utils/export_TensorRT.py` – helper for exporting models to TensorRT (optional).
-
 ---
 ## Core Engine Architecture (`engine.py`)
 
@@ -156,6 +140,19 @@ DB errors are logged as `[DB ERROR] ...` and do **not** abort the loop.
 
 On exit, all OpenCV handles and DB resources are released.
 
+---
+## Repository Overview
+
+- **`requirements.txt`** – Pip dependencies (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Use with `pip install -r requirements.txt` if you already have PyTorch/CUDA.
+- **`environment.yaml`** – Conda env `lp`: Python 3.10, PyTorch 2.10 + CUDA 13.0, and the same pip deps. Use with `conda env create -f environment.yaml` for a single-command setup.
+- `train.py` – YOLO training entrypoint for the plate detector.
+- `engine.py` – **core engine**: model/DB initialization, frame loop, pacing, detection, ByteTrack ID handling, OCR, temporal filtering, DB inserts, and result image export.
+- `stream_inference.py` – interactive streaming script that wraps `engine.run` with a GUI (FPS + boxes + text).
+- `offline_headless_inference.py` – file‑to‑file batch processing via `engine.run`, uses DB connection pooling and writes annotated video to `OUT_VIDEO`.
+- `stream_headless_inference.py` – real‑time streaming inference via `engine.run` without any GUI.
+- `model/custom_bytetrackv2.yaml` – ByteTrack tracker configuration used by `engine.run`.
+- `runs/detect/train9/weights/last.pt` – default detector checkpoint path after training (path is configurable in the front‑end scripts).
+- `utils/export_TensorRT.py` – helper for exporting models to TensorRT (optional).
 ---
 
 ## Configuration Cheatsheet
