@@ -9,7 +9,6 @@ from mysql.connector.pooling import MySQLConnectionPool
 from ultralytics import YOLO
 from fast_plate_ocr import LicensePlateRecognizer
 
-
 os.environ["ORT_TENSORRT_UNAVAILABLE"] = "1" # this disables TensorRT (if available), the ocr model takes little bit long to load with it  
 
 def init_models(model_weights, ocr_model_name):
