@@ -389,3 +389,7 @@ Configure **DB credentials** before running (they are left blank in the template
   - Add JSON/CSV logging alongside DB inserts.
   - Push events to a message queue or REST API in `insert_plate` if you need streaming integration with other systems.
 
+## Deduplication Technique for the realtime-sync i thought of but didn't have time to do:
+- create a new cache variable that periodically (each 15 frames) search if we have different tracking ids with the same best_text in our ocr_cache (the model was tracking a license plate, then dropped it because of frame drops or something, then tracked it again with a new id)
+if found, then stop the first dropped track from commiting, and wait till the second one finishes tracking (with the final 90 frame buffer), and commit the best one out of them
+
