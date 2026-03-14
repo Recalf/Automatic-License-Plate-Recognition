@@ -391,7 +391,7 @@ Configure **DB credentials** before running (they are left blank in the template
 
 ## Deduplication Technique for the realtime-sync (Concept):
 
-I thought of this after publishing the project but didn't try it, but it sounds very solid to me:
+I thought of this after publishing the project but didn't try it. it sounds very solid to me:
 
 - create a new cache variable that periodically (each 15 frames) searches for different tracking IDs with the same best_text in our ocr_cache (this can happen when the model was tracking a license plate, then dropped it because of frame drops or something similar, then tracked it again with a new ID)
 
