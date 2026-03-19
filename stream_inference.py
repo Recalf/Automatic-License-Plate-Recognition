@@ -9,27 +9,28 @@ DISPLAY_W = 1920
 DISPLAY_H = 1080
 
 # YOLO
-CONF = 0.25
-IMGSZ = 1280
+CONF = 0.25 
+IMGSZ = 1920
 MODEL_WEIGHTS = "runs/detect/train9/weights/last.pt"
 TRACKER = "model/custom_bytetrackv2.yaml"
 
 # DB
-DB_HOST = "localhost"
+DB_HOST = 
 DB_PORT = 
-DB_USER = 
+DB_USER =
 DB_PASSWORD = 
-DB_NAME = "license_plate_db"
-DB_TABLE = "plates"
+DB_NAME = 
+DB_TABLE = 
 
 
 # OCR
-OCR_MODEL_NAME = "cct-s-v1-global-model"
+OCR_MODEL_NAME = "cct-s-v2-global-model"
+OCR_CONF = 0.75 # threshold
 MIN_OCR_CHARS_LEN = 5
-OCR_EVERY_FRAMES = 15  
-AREA_EPS_RATIO = 0.05  # n% bigger size margin to do ocr again
-MIN_PLATE_W = 55  # size threshold for ocr
-MIN_PLATE_H = 20
+OCR_EVERY_FRAMES = 5 # we have 2 checks to do ocr, this first, then if size (with margin eps) bigger
+AREA_EPS_RATIO = 0.03  # n% bigger size margin to do ocr again
+MIN_PLATE_W = 25  # size threshold for ocr
+MIN_PLATE_H = 25
 
 def main():
     run(
@@ -43,6 +44,7 @@ def main():
         ocr_model_name=OCR_MODEL_NAME,
         conf=CONF,
         imgsz=IMGSZ,
+        ocr_conf=OCR_CONF,
         min_ocr_chars_len=MIN_OCR_CHARS_LEN,
         ocr_every_frames=OCR_EVERY_FRAMES,
         area_eps_ratio=AREA_EPS_RATIO,
