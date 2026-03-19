@@ -89,7 +89,7 @@ def _next_run_dir(root_dir): # this is just for each run we make a new sub folde
     os.makedirs(run_dir, exist_ok=True)
     return run_dir
 
-def _safe_name(s): # left it as a function if we would want to change the safety logic later, we already write safely
+def _safe_name(s): 
     return s[:40]
 
 def insert_plate(db, track_id, plate_text, best_width, image_path, table):
