@@ -56,7 +56,7 @@ def extract_ids_numpy(boxes_cpu, n): # i made this safer because i had some prob
     except AttributeError:
         return ids_t.astype(np.int32)
 
-def preprocess_plate_for_ocr(plate_bgr): # upscale + CLAHE + sharpness
+def preprocess_plate_for_ocr(plate_bgr): # upscale + sharpness (if you want CLAHE you could just uncomment those 2 lines)
     plate = cv2.resize(plate_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     gray = cv2.cvtColor(plate, cv2.COLOR_BGR2GRAY)
 
