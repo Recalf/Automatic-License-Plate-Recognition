@@ -2,29 +2,30 @@ from engine import run
 
 # CONFIG
 TRACKER = "model/custom_bytetrackv2.yaml"
-VID_IN = "test/vid5.mp4"
+VID_IN = "vid5.mp4"
 RESULT_IMAGES_ROOT = "result_images"
 
 # YOLO
 CONF = 0.25
-IMGSZ = 1280
+IMGSZ = 1920
 MODEL_WEIGHTS = "runs/detect/train9/weights/last.pt"
 
 # DB
-DB_HOST = "localhost"
+DB_HOST = 
 DB_PORT = 
 DB_USER = 
 DB_PASSWORD = 
-DB_NAME = "license_plate_db"
-DB_TABLE = "plates"
+DB_NAME = 
+DB_TABLE = 
 
 # OCR
-OCR_MODEL_NAME = "cct-s-v1-global-model" # can do xs version or others
+OCR_MODEL_NAME = "cct-s-v2-global-model" # can do xs version or others
+OCR_CONF = 0.75 # threshold
 MIN_OCR_CHARS_LEN = 5
-OCR_EVERY_FRAMES = 15  
-AREA_EPS_RATIO = 0.05  # n% bigger size margin to do ocr again
-MIN_PLATE_W = 55  # how many pixels to not do ocr
-MIN_PLATE_H = 20
+OCR_EVERY_FRAMES = 5 # we have 2 checks to do ocr, this first, then if size (with margin eps) bigger
+AREA_EPS_RATIO = 0.03  # n% bigger size margin to do ocr again
+MIN_PLATE_W = 25  # size threshold for ocr
+MIN_PLATE_H = 25
 
 def main():
     run(
@@ -37,6 +38,7 @@ def main():
         ocr_model_name=OCR_MODEL_NAME,
         conf=CONF,
         imgsz=IMGSZ,
+        ocr_conf=OCR_CONF,
         min_ocr_chars_len=MIN_OCR_CHARS_LEN,
         ocr_every_frames=OCR_EVERY_FRAMES,
         area_eps_ratio=AREA_EPS_RATIO,
