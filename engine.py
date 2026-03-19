@@ -9,6 +9,7 @@ from mysql.connector.pooling import MySQLConnectionPool
 from ultralytics import YOLO
 from fast_plate_ocr import LicensePlateRecognizer
 
+
 os.environ["ORT_TENSORRT_UNAVAILABLE"] = "1" # this disables TensorRT (if available), the ocr model takes little bit long to load with it  
 
 def init_models(model_weights, ocr_model_name):
@@ -50,29 +51,30 @@ def extract_ids_numpy(boxes_cpu, n): # i made this robust because i had some pro
     ids_t = boxes_cpu.id
     if ids_t is None:
         return np.arange(n, dtype=np.int32)
-    if hasattr(ids_t, "int"):
-        return ids_t.int().cpu().numpy().astype(np.int32)
-    return ids_t.astype(np.int32)
+    try:
+        return ids_t.cpu().numpy().astype(np.int32)
+    except AttributeError:
+        return ids_t.astype(np.int32)
 
 def preprocess_plate_for_ocr(plate_bgr): # upscale + CLAHE + sharpness
-    plate = cv2.resize(plate_bgr, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+    plate = cv2.resize(plate_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     gray = cv2.cvtColor(plate, cv2.COLOR_BGR2GRAY)
 
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)) 
-    gray = clahe.apply(gray)
+    #clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(6,6)) # commented because performed little bit worse than without it
+    #gray = clahe.apply(gray)
 
     blur = cv2.GaussianBlur(gray, (0,0), 1.0)  # sharpness (blur then subtract blur from original) 
-    gray = cv2.addWeighted(gray, 1.1, blur, -0.1, 0)
+    gray = cv2.addWeighted(gray, 1.2, blur, -0.2, 0)
 
-    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    return gray
 
-def save_best_crop(run_dir, track_id, plate_text, crop_bgr):
-    if crop_bgr is None or getattr(crop_bgr, "size", 0) == 0:
+def save_best_crop(run_dir, track_id, plate_text, crop):
+    if crop is None or crop.size == 0:
         return ""
     fname = f"{int(track_id)}_{_safe_name(plate_text)}.jpg"
     path = os.path.join(run_dir, fname)
     try:
-        cv2.imwrite(path, crop_bgr)
+        cv2.imwrite(path, crop)
         return path
     except Exception:
         return ""
@@ -87,15 +89,14 @@ def _next_run_dir(root_dir): # this is just for each run we make a new sub folde
     os.makedirs(run_dir, exist_ok=True)
     return run_dir
 
-def _safe_name(s): # this just for windows file naming (cropped imagese names)
-    s = "".join(ch for ch in str(s) if ch.isalnum() or ch in ("-", "_"))
-    return s[:40] if len(s) > 40 else s
+def _safe_name(s): # left it as a function if we would want to change the safety logic later, we already write safely
+    return s[:40]
 
 def insert_plate(db, track_id, plate_text, best_width, image_path, table):
     ts = datetime.now()
     conn = None
     try:
-        conn = db.get_connection() if hasattr(db, "get_connection") else db
+        conn = db.get_connection() if hasattr(db, "get_connection") else db  # pooling else normal
         with conn.cursor() as cur:
             cur.execute(
                 f"INSERT INTO {table} (track_id, plate_text, best_width, ts, image_path) VALUES (%s, %s, %s, %s, %s)",
@@ -108,14 +109,24 @@ def insert_plate(db, track_id, plate_text, best_width, image_path, table):
         if conn is not None and conn is not db:
             try:
                 conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error closing DB connection: {e}")
 
-def ocr_plate_text(ocr, plate_bgr, min_ocr_chars_len):
-    text = ocr.run(plate_bgr)
-    if isinstance(text, list):
-        text = text[0]
-    candidate = "".join(ch for ch in str(text).upper() if ch.isalnum())
+def ocr_plate_text(ocr, plate_gray, min_ocr_chars_len, min_ocr_conf=0.0):
+    preds = ocr.run(plate_gray, return_confidence=True)
+    if not preds:
+        return ""
+    p0 = preds[0]
+    raw_text = p0.plate
+
+    # reject low confidence OCR
+    if min_ocr_conf > 0.0:
+        probs = p0.char_probs 
+        if probs is not None:
+            mean_conf = sum(probs) / float(len(probs))
+            if mean_conf < min_ocr_conf:
+                return ""
+    candidate = "".join(ch for ch in raw_text.upper() if ch.isalnum())
 
     # reject results with less than 2 unique characters
     if len(set(candidate)) <= 2:
@@ -177,11 +188,13 @@ def fit_for_screen(frame, max_w=1280, max_h=720):
         return frame
     return cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
 
+
 def run(*, show_gui=True, realtime=True, save_video_path=None, result_images_root="result_images",
-    vid_in, tracker, model_weights, ocr_model_name, conf, imgsz, min_ocr_chars_len,
+    vid_in, tracker, model_weights, ocr_model_name, conf, imgsz, ocr_conf, min_ocr_chars_len,
     ocr_every_frames, area_eps_ratio, min_plate_w, min_plate_h, db_host, db_port, db_user, db_password, db_name, db_table,
     db_pool=False, db_pool_size=8, display_w=None, display_h=None
     ):
+
     model, ocr = init_models(model_weights=model_weights, ocr_model_name=ocr_model_name)
     db = init_db(host=db_host, port=db_port, user=db_user, password=db_password, database=db_name, pool=db_pool, pool_size=db_pool_size)
     run_dir = _next_run_dir(result_images_root)
@@ -210,124 +223,195 @@ def run(*, show_gui=True, realtime=True, save_video_path=None, result_images_roo
     loop_last = time.perf_counter()
     fps = 0.0
     fps_alpha = 0.9
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        now_s = time.perf_counter()
-        h, w = frame.shape[:2]
-        frame_i += 1
 
-        if realtime:
-            pace_video(t0, frame_i, frame_period)
-            frame_i = behind_catchup(cap, t0, frame_i, frame_period)
+    try:
+        while True:
+            if realtime:
+                frame_i = behind_catchup(cap, t0, frame_i, frame_period)
 
-        results = model.track(frame, tracker=tracker, persist=True, imgsz=imgsz, conf=conf, verbose=False)[0]
-        boxes = results.boxes
-        if boxes is not None and len(boxes) > 0:
-            b = boxes.cpu()
-            cls = b.cls.int().numpy()
-            xyxy = b.xyxy.int().numpy()
-            ids = extract_ids_numpy(b, len(cls))
-            for i, (c, bb) in enumerate(zip(cls, xyxy)):
-                if c != 0:
-                    continue
-
-                track_id = int(ids[i])
-                x1, y1, x2, y2 = bb
-                x1, y1 = max(0, x1), max(0, y1)
-                x2, y2 = min(w, x2), min(h, y2)
-                bw = x2 - x1
-                bh = y2 - y1
-                area = int(bw * bh)
-                if bw < min_plate_w or bh < min_plate_h:
-                    if track_id not in ocr_cache:
-                        ocr_cache[track_id] = {"best_text": "", "best_width": 0, "best_crop": None, "last_frame": frame_i, "last_ocr_frame": frame_i}
-                    else:
-                        ocr_cache[track_id]["last_frame"] = frame_i
-                    continue
-
-                if show_gui or writer is not None:
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-                cached = ocr_cache.get(track_id)
-                if cached is None:
-                    cached = {"best_text": "", "best_width": 0, "best_crop": None, "last_frame": frame_i, "last_ocr_frame": frame_i}
-                    ocr_cache[track_id] = cached
-                else:
-                    cached["last_frame"] = frame_i
-
-                do_ocr = (frame_i - cached["last_ocr_frame"]) >= ocr_every_frames
-                if do_ocr:
-                    plate = frame[y1:y2, x1:x2]
-                    if plate.size != 0:
-                        plate = preprocess_plate_for_ocr(plate)
-                        candidate = ocr_plate_text(ocr, plate, min_ocr_chars_len=min_ocr_chars_len)
-                    else:
-                        candidate = ""
-
-                    if candidate:
-                        old_w = cached["best_width"]
-                        diff = (bw - old_w) / float(old_w) if old_w > 0 else 1.0
-                        if old_w == 0 or (bw > old_w and diff > area_eps_ratio):
-                            cached["best_width"] = bw
-                            cached["best_text"] = candidate
-                            cached["best_crop"] = frame[y1:y2, x1:x2].copy()
-
-                    cached["last_ocr_frame"] = frame_i
-
-                text = cached["best_text"]
-                if not text:
-                    continue
-                if show_gui or writer is not None:
-                    draw_text_box(frame, text, x1, y1, x2, y2)
-
-        # after processing detections, insert plates whose track has been gone for >= 90 frames
-        to_delete = []
-        for tid, data in ocr_cache.items():
-            best_text = data["best_text"]
-            if not best_text:
-                continue
-            last_frame = data["last_frame"]
-            if frame_i - last_frame >= 90:
-                image_path = save_best_crop(run_dir, tid, best_text, data["best_crop"])
-                insert_plate(db, track_id=tid, plate_text=best_text, best_width=data["best_width"], image_path=image_path, table=db_table)
-                to_delete.append(tid)
-
-        for tid in to_delete:
-            ocr_cache.pop(tid, None)
-
-        # fps counter
-        loop_now = time.perf_counter()
-        dt = loop_now - loop_last
-        loop_last = loop_now
-        inst_fps = (1.0 / dt) if dt > 0 else 0.0
-        fps = inst_fps if fps == 0 else fps_alpha * fps + (1.0 - fps_alpha) * inst_fps
-
-        if show_gui:
-            draw_fps(frame, fps)
-            show = fit_for_screen(frame, display_w or 1920, display_h or 1080)
-            cv2.imshow("plate", show)
-            if cv2.pollKey() & 0xFF == 27:
+            ok, frame = cap.read()
+            if not ok:
                 break
 
+            h, w = frame.shape[:2]
+            frame_i += 1 
+        
+            results = model.track(frame, tracker=tracker, persist=True, imgsz=imgsz, conf=conf, verbose=False)[0]
+            boxes = results.boxes
+            if boxes is not None and len(boxes) > 0:
+                b = boxes.cpu()
+                cls = b.cls.int().numpy()
+                xyxy = b.xyxy.int().numpy()
+                ids = extract_ids_numpy(b, len(cls))
+                for i, (c, bb) in enumerate(zip(cls, xyxy)):
+                    if c != 0:
+                        continue
+
+                    track_id = int(ids[i])
+                    x1, y1, x2, y2 = bb
+                    x1, y1 = max(0, x1), max(0, y1)
+                    x2, y2 = min(w, x2), min(h, y2)
+                    bw = x2 - x1
+                    bh = y2 - y1
+                    area = int(bw * bh)
+                    if bw < min_plate_w or bh < min_plate_h:
+                        if track_id not in ocr_cache:
+                            ocr_cache[track_id] = {"best_text": "", "best_width": 0, "best_crop": None, "last_frame": frame_i, "last_ocr_frame": frame_i}
+                        else:
+                            ocr_cache[track_id]["last_frame"] = frame_i
+                        continue
+
+                    if show_gui or writer is not None:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+                    cached = ocr_cache.get(track_id)
+                    if cached is None:
+                        cached = {"best_text": "", "best_width": 0, "best_crop": None, "last_frame": frame_i, "last_ocr_frame": frame_i}
+                        ocr_cache[track_id] = cached
+                    else:
+                        cached["last_frame"] = frame_i
+
+                    do_ocr = (frame_i - cached["last_ocr_frame"]) >= ocr_every_frames
+                    if do_ocr:
+                        candidate = ""   
+
+                        if cached["best_width"] == 0: # first instance always take
+                            plate = frame[y1:y2, x1:x2]
+                            plate = preprocess_plate_for_ocr(plate)
+                            candidate = ocr_plate_text(ocr, plate, min_ocr_chars_len=min_ocr_chars_len, min_ocr_conf=ocr_conf)
+                            cached["last_ocr_frame"] = frame_i
+
+                        else: # else event-based write
+                            old_w = cached["best_width"]
+                            diff = (bw - old_w) / float(old_w) if old_w > 0 else 1.0
+                            if old_w == 0 or (bw > old_w and diff > area_eps_ratio):
+                                plate = frame[y1:y2, x1:x2]
+                                plate = preprocess_plate_for_ocr(plate)
+                                candidate = ocr_plate_text(ocr, plate, min_ocr_chars_len=min_ocr_chars_len, min_ocr_conf=ocr_conf)
+                                cached["last_ocr_frame"] = frame_i
+
+                        if candidate:
+                            cached["best_width"] = bw
+                            cached["best_text"] = candidate
+                            cached["best_crop"] = plate.copy()
+
+                    text = cached["best_text"]
+                    if not text:
+                        continue
+                    if show_gui or writer is not None:
+                        draw_text_box(frame, text, x1, y1, x2, y2)
+
+            # insert plates only when "all" tracks with same best_text have been gone for >= 90 frames
+            if ocr_cache:
+                any_candidate = False
+                for data in ocr_cache.values():
+                    if frame_i - data["last_frame"] >= 90:
+                        any_candidate = True
+                        break
+
+                if any_candidate:
+                    by_text = {}
+                    for tid, data in ocr_cache.items():
+                        txt = data["best_text"]
+                        if not txt:
+                            continue
+                        if txt not in by_text:
+                            by_text[txt] = []
+                        by_text[txt].append(tid)
+
+                    to_delete = []
+                    for txt, tids in by_text.items():
+                        all_done = True
+                        for t in tids:
+                            last_frame = ocr_cache[t]["last_frame"]
+                            if frame_i - last_frame < 90:
+                                all_done = False
+                                break
+                        if not all_done:
+                            continue
+
+                        best_tid = None
+                        best_w = -1
+                        best_last_frame = -1
+                        for t in tids:
+                            d = ocr_cache[t]
+                            w = d["best_width"]
+                            lf = d["last_frame"]
+                            if w > best_w or (w == best_w and lf > best_last_frame):
+                                best_w = w
+                                best_last_frame = lf
+                                best_tid = t
+
+                        if best_tid is None:
+                            for t in tids:
+                                to_delete.append(t)
+                            continue
+
+                        d_best = ocr_cache[best_tid]
+                        image_path = save_best_crop(run_dir, best_tid, txt, d_best["best_crop"])
+                        insert_plate(
+                            db,
+                            track_id=best_tid,
+                            plate_text=txt,
+                            best_width=d_best["best_width"],
+                            image_path=image_path,
+                            table=db_table,
+                        )
+
+                        for t in tids:
+                            to_delete.append(t)
+
+                    for tid in to_delete:
+                        ocr_cache.pop(tid, None)
+
+            # fps counter
+            loop_now = time.perf_counter()
+            dt = loop_now - loop_last
+            loop_last = loop_now
+            inst_fps = (1.0 / dt) if dt > 0 else 0.0
+            fps = inst_fps if fps == 0 else fps_alpha * fps + (1.0 - fps_alpha) * inst_fps
+
+            if show_gui:
+                draw_fps(frame, fps)
+                show = fit_for_screen(frame, display_w or 1920, display_h or 1080)
+                cv2.imshow("plate", show)
+                if cv2.pollKey() & 0xFF == 27:
+                    break
+
+            if writer is not None:
+                writer.write(frame)
+
+            if realtime:
+                pace_video(t0, frame_i, frame_period)
+
+        # flush any remaining tracks that never hit the 90 frame gap:
+        if ocr_cache:
+            by_text = {}
+            for tid, data in ocr_cache.items():
+                txt = data["best_text"]
+                if not txt: continue
+                if txt not in by_text: by_text[txt] = []
+                by_text[txt].append(tid)
+
+            for txt, tids in by_text.items():
+                best_tid = None
+                best_w = -1
+                for t in tids:
+                    if ocr_cache[t]["best_width"] > best_w:
+                        best_w = ocr_cache[t]["best_width"]
+                        best_tid = t
+                if best_tid:
+                    d_best = ocr_cache[best_tid]
+                    image_path = save_best_crop(run_dir, best_tid, txt, d_best["best_crop"])
+                    insert_plate(db, best_tid, txt, d_best["best_width"], image_path, db_table)
+
+    finally:
+        cap.release()
         if writer is not None:
-            writer.write(frame)
-
-    # flush any remaining tracks that never hit the 90 frame gap
-    for tid, data in ocr_cache.items():
-        best_text = data["best_text"]
-        if best_text:
-            image_path = save_best_crop(run_dir, tid, best_text, data["best_crop"])
-            insert_plate(db, track_id=tid, plate_text=best_text, best_width=data["best_width"], image_path=image_path, table=db_table)
-
-    cap.release()
-    if writer is not None:
-        writer.release()
-    if show_gui:
-        cv2.destroyAllWindows()
-    try:
-        if hasattr(db, "close"):
+            writer.release()
+        if show_gui:
+            cv2.destroyAllWindows()
+        try:
             db.close()
-    except Exception:
-        pass
+        except:
+            pass
