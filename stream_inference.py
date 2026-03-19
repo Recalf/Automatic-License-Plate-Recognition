@@ -24,7 +24,7 @@ DB_TABLE =
 
 
 # OCR
-OCR_MODEL_NAME = "cct-s-v2-global-model"
+OCR_MODEL_NAME = "cct-s-v2-global-model" # xs version: cct-s-v2-global-model
 OCR_CONF = 0.75 # threshold
 MIN_OCR_CHARS_LEN = 5
 OCR_EVERY_FRAMES = 5 # we have 2 checks to do ocr, this first, then if size (with margin eps) bigger
