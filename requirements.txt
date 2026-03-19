@@ -4,5 +4,4 @@ mysql-connector-python==9.6.0
 numpy>=1.24,<2.3
 protobuf<7
 onnxruntime==1.24.3 # OCR runtime on cpu, worked better than gpu (onnxruntime-gpu==1.24.3) 
-
 opencv-python==4.10.0.84
