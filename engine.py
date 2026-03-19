@@ -47,7 +47,7 @@ def behind_catchup(cap, t0, frame_i, frame_period):
         now_time = time.perf_counter() - t0
     return frame_i
 
-def extract_ids_numpy(boxes_cpu, n): # i made this robust because i had some problems with the ids
+def extract_ids_numpy(boxes_cpu, n): # i made this safer because i had some problems with the ids
     ids_t = boxes_cpu.id
     if ids_t is None:
         return np.arange(n, dtype=np.int32)
