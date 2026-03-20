@@ -8,7 +8,7 @@ This is a **full, production‑style license plate recognition system**, not jus
 
 - **End‑to‑end flow**: raw video → **YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
 - **Real‑time aware**: explicit frame pacing + catch‑up/drop‑frame logic to keep live streams aligned (avoid latency build‑up).
-- **Tracking stability & data coherency**: dropped frames can split the same physical plate into multiple `track_id`s; the engine de‑duplicates by `best_text` and commits only after the plate disappears from all candidates for about **90 frames** (deadzone).
+- **Tracking stability & data coherency**: dropped frames can split the same physical plate into multiple `track_id`s; the engine de‑duplicates by `best_text` and commits only after the plate disappears from all candidates for about **90 frames**.
 - **Robust OCR layer**: grayscale plate preprocessing (2x upscale + sharpen), OCR throttling, `OCR_CONF` min-confidence filtering, and strict text rules (unique characters, digit/letter balance, minimum length).
 - **Data‑ready outputs**: structured DB schema plus run‑organized plate crops so detections are easy to query, debug, and feed into dashboards or downstream services.
 
