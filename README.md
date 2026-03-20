@@ -15,7 +15,7 @@ This is a **full, production‑style license plate recognition system**, not jus
 ### What this project demonstrates
 
 - **System‑level computer vision**: integrates detection, tracking, OCR, and storage with attention to latency, quality, and failure modes.
-- **Real engineering trade‑offs**:
+- **Real engineering trade‑offs options**:
   - Real‑time vs offline processing (pacing vs throughput, when to drop frames).
   - Connection pooling vs single connections for different workloads.
   - Practical pre‑processing (2x upscale + grayscale + sharpen; CLAHE tested but disabled) tuned for OCR robustness.
