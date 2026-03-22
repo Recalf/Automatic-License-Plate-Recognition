@@ -10,8 +10,8 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp310-cp310-win_amd64.whl
-      - https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp310-cp310-win_amd64.whl
+      - https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp311-cp311-win_amd64.whl
+      - https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp311-cp311-win_amd64.whl
       - ultralytics==8.4.21
       - fast-plate-ocr @ git+https://github.com/ankandrew/fast-plate-ocr.git
       - onnxruntime==1.24.3
