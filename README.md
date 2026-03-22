@@ -215,7 +215,7 @@ On exit, all OpenCV handles and DB resources are released.
 You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
 
 
-#### Option A: Conda (recommended, includes CUDA for YOLO)
+#### Option A: Conda 
 
 The repo includes an **`environment.yaml`** that builds the `lp` env. It uses **PyTorch 2.6.0** with **CUDA 12.4** support.
 
@@ -224,7 +224,7 @@ conda env create -f environment.yaml
 conda activate lp
 ```
 
-- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=12.4` (CUDA 12.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` or `pytorch-cuda=11.8` for CUDA 11.
+- **CUDA**: If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` or `pytorch-cuda=11.8` for CUDA 11.
 - **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
 
 
@@ -237,10 +237,10 @@ pip install -r requirements.txt
 ```
 
 - **`requirements.txt`** pins all core dependencies: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. PyTorch and torchvision (CUDA 12.4 builds) included, so no separate PyTorch installation is required.
-- **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
+- You can run inference on CPU only, but FPS will be very low. Also the OCR runs on CPU via `onnxruntime` and does not require CUDA.
 
 
-> **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT on purpose.
+> **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT and onnxruntime-gpu on purpose.
 
 ### 2. MySQL setup
 
