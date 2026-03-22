@@ -10,7 +10,6 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      # Fix: Paired versions for PyTorch 2.10.0 + CUDA 13.0
       - https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp310-cp310-win_amd64.whl
       - https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp310-cp310-win_amd64.whl
       - ultralytics==8.4.21
