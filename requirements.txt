@@ -1,7 +1,10 @@
+https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp313-cp313-win_amd64.whl
+https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp313-cp313-win_amd64.whl
+numpy==2.2.6
+protobuf==6.33.6
 ultralytics==8.4.21
-fast-plate-ocr @ git+https://github.com/ankandrew/fast-plate-ocr.git
+lap==0.5.13
+fast-plate-ocr==1.1.0
+onnxruntime==1.24.3 # OCR runtime on CPU, worked better than GPU (onnxruntime-gpu==1.24.3)
 mysql-connector-python==9.6.0
-numpy>=1.24,<2.3
-protobuf<7
-onnxruntime==1.24.3 # OCR runtime on cpu, worked better than gpu (onnxruntime-gpu==1.24.3) 
 opencv-python==4.10.0.84
