@@ -66,7 +66,7 @@ def preprocess_plate_for_ocr(plate_bgr): # upscale + sharpness (if you want CLAH
     blur = cv2.GaussianBlur(gray, (0,0), 1.0)  # sharpness (blur then subtract blur from original) 
     gray = cv2.addWeighted(gray, 1.2, blur, -0.2, 0)
 
-    return gray
+    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
 
 def save_best_crop(run_dir, track_id, plate_text, crop):
     if crop is None or crop.size == 0:
