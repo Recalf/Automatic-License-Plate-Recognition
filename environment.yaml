@@ -1,22 +1,20 @@
 # Conda env: lp
-# Recreate: conda env create -f environment.yaml
-# CUDA 13.x (pytorch-cuda=13.0). PyTorch 2.10+ required for CUDA 13. For older CUDA use 12.1 or 11.8.
-
 # conda env create -f environment.yaml
 name: lp
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
+  - python=3.13
   - pip
   - pip:
-      - https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp311-cp311-win_amd64.whl
-      - https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp311-cp311-win_amd64.whl
+      - https://download.pytorch.org/whl/cu130/torch-2.10.0%2Bcu130-cp313-cp313-win_amd64.whl
+      - https://download.pytorch.org/whl/cu130/torchvision-0.25.0%2Bcu130-cp313-cp313-win_amd64.whl
+      - numpy==2.2.6
+      - protobuf==6.33.6
       - ultralytics==8.4.21
-      - fast-plate-ocr @ git+https://github.com/ankandrew/fast-plate-ocr.git
+      - lap==0.5.13
+      - fast-plate-ocr==1.1.0
+      - onnxruntime==1.24.3 
       - mysql-connector-python==9.6.0
-      - onnxruntime==1.24.3
-      - numpy>=1.24,<2.3
       - opencv-python==4.10.0.84
-      - protobuf<7
