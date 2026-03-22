@@ -94,7 +94,7 @@ Each frame:
 **Pre‑processing** (`preprocess_plate_for_ocr`):
 
 - Upscale crop (x2).
-- Convert to grayscale (OCR runs on grayscale crops now).
+- Convert to grayscale, then back to 3-channel BGR (keeps preprocessing benefits while matching OCR input expectations).
 - Sharpen with Gaussian blur + weighted subtraction (`cv2.addWeighted`).
 - Note: CLAHE was tested but performed slightly worse, so it is disabled in the current engine.
 
@@ -209,7 +209,7 @@ You can use **Conda** (recommended) or **pip only**. Both are pinned so the proj
 
 #### Option A: Conda (recommended, includes CUDA for YOLO)
 
-The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.10, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
+The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.13, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
 
 ```bash
 conda env create -f environment.yaml
@@ -222,13 +222,13 @@ conda activate lp
 
 #### Option B: Pip only (`requirements.txt`)
 
-If you prefer a venv or already have Python 3.10+ and PyTorch (with or without CUDA):
+If you prefer a venv or already have Python 3.13 and PyTorch (with or without CUDA):
 
 ```bash
 pip install -r requirements.txt
 ```
 
-- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. It does **not** install PyTorch or CUDA; 
+- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. PyTorch and torchvision (CUDA 13.0 builds) are explicitly pinned via direct wheel URLs in both requirements.txt and environment.yaml, so no separate PyTorch installation is required.
 - **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
 
 
