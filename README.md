@@ -30,8 +30,8 @@ This is a **full, production‑style license plate recognition system**, not jus
 ---
 ## Repository Overview
 
-- **`requirements.txt`** – Pip dependencies (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Use with `pip install -r requirements.txt` if you already have PyTorch/CUDA.
-- **`environment.yaml`** – Conda env `lp`: Python 3.10, PyTorch 2.10 + CUDA 13.0, and the same pip deps. Use with `conda env create -f environment.yaml` for a single-command setup.
+- **`requirements.txt`** – Fully pinned dependencies including PyTorch 2.10 + CUDA 13.0 wheels, torchvision, and all required libraries (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Install with `pip install -r requirements.txt`.
+- **`environment.yaml`** – Conda env `lp`: Python 3.13 with the same fully pinned pip dependencies (including PyTorch CUDA 13.0 wheels) for a one-command reproducible setup. Use with `conda env create -f environment.yaml` for a single-command setup.
 - `train.py` – YOLO training entrypoint for the plate detector.
 - `engine.py` – **core engine**: model/DB initialization, frame loop, pacing, detection, ByteTrack ID handling, OCR, temporal filtering, DB inserts, and result image export.
 - `stream_inference.py` – interactive streaming script that wraps `engine.run` with a GUI (FPS + boxes + text).
@@ -209,7 +209,7 @@ You can use **Conda** (recommended) or **pip only**. Both are pinned so the proj
 
 #### Option A: Conda (recommended, includes CUDA for YOLO)
 
-The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.13, PyTorch 2.10, CUDA 13.0, and all pip dependencies in one go.
+The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.13, and installs PyTorch 2.10 + CUDA 13.0 via pip wheels, along with all other dependencies in one step.
 
 ```bash
 conda env create -f environment.yaml
@@ -222,7 +222,7 @@ conda activate lp
 
 #### Option B: Pip only (`requirements.txt`)
 
-If you prefer a venv or already have Python 3.13 and PyTorch (with or without CUDA):
+If you already have Python 3.13 or prefer a venv you could use:
 
 ```bash
 pip install -r requirements.txt
