@@ -28,10 +28,17 @@ This is a **full, production‑style license plate recognition system**, not jus
 - **Offline batch (file → file)** – annotated video + DB + crops: `python offline_batch_inference.py`  
 
 ---
+## Tested Environment
+
+- Python 3.11
+- PyTorch 2.6.0 (CUDA 12.4)
+- GPU: NVIDIA (CUDA 12.x compatible)
+- OS: Linux / Windows
+
 ## Repository Overview
 
-- **`requirements.txt`** – Fully pinned dependencies including PyTorch 2.10 + CUDA 13.0 wheels, torchvision, and all required libraries (ultralytics, fast-plate-ocr, mysql-connector-python, opencv-python, numpy, protobuf, onnxruntime). Install with `pip install -r requirements.txt`.
-- **`environment.yaml`** – Conda env `lp`: Python 3.13 with the same fully pinned pip dependencies (including PyTorch CUDA 13.0 wheels) for a one-command reproducible setup. Use with `conda env create -f environment.yaml` for a single-command setup.
+- **`requirements.txt`** – Core dependencies including PyTorch (CUDA 12.4 builds). Install with `pip install -r requirements.txt`.
+- **`environment.yaml`** – Conda env `lp`: Python 3.11, PyTorch 2.6.0 and CUDA 12.4 (via pytorch-cuda) plus all required dependencies. Use with `conda env create -f environment.yaml` for a single-command setup.
 - `train.py` – YOLO training entrypoint for the plate detector.
 - `engine.py` – **core engine**: model/DB initialization, frame loop, pacing, detection, ByteTrack ID handling, OCR, temporal filtering, DB inserts, and result image export.
 - `stream_inference.py` – interactive streaming script that wraps `engine.run` with a GUI (FPS + boxes + text).
@@ -207,28 +214,29 @@ On exit, all OpenCV handles and DB resources are released.
 
 You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
 
+
 #### Option A: Conda (recommended, includes CUDA for YOLO)
 
-The repo includes an **`environment.yaml`** that defines the `lp` env with Python 3.13, and installs PyTorch 2.10 + CUDA 13.0 via pip wheels, along with all other dependencies in one step.
+The repo includes an **`environment.yaml`** that builds the `lp` env. It uses **PyTorch 2.6.0** with **CUDA 12.4** support.
 
 ```bash
 conda env create -f environment.yaml
 conda activate lp
 ```
 
-- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=13.0` (CUDA 13.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` for CUDA 12 or `pytorch-cuda=11.8` for CUDA 11.
+- **CUDA**: Needed for **YOLO** (training and real-time inference). The yaml uses `pytorch-cuda=12.4` (CUDA 12.x). If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` or `pytorch-cuda=11.8` for CUDA 11.
 - **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
 
 
 #### Option B: Pip only (`requirements.txt`)
 
-If you already have Python 3.13 or prefer a venv you could use:
+If you already have Python 3.11 or prefer a venv you could use:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-- **`requirements.txt`** pins: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. PyTorch and torchvision (CUDA 13.0 builds) are explicitly pinned via direct wheel URLs in both requirements.txt and environment.yaml, so no separate PyTorch installation is required.
+- **`requirements.txt`** pins all core dependencies: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. PyTorch and torchvision (CUDA 12.4 builds) included, so no separate PyTorch installation is required.
 - **When CUDA is needed**: For **training** (`train.py`) and for **smooth real-time inference** (YOLO detection), a GPU with CUDA is strongly recommended. You can run inference on CPU only, but FPS will be lower. OCR runs on CPU via `onnxruntime` and does not require CUDA.
 
 
