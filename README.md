@@ -198,7 +198,7 @@ On exit, all OpenCV handles and DB resources are released.
 ## Performance Notes & Tips
 
 - **GPU vs CPU**: For high‑resolution (`IMGSZ` ≥ 1408) and multi‑object tracking, GPU is strongly recommended. On CPU you may need to:
-  - Lower `IMGSZ` (e.g., 960)
+  - Lower `IMGSZ` (e.g., 640)
   - Increase `OCR_EVERY_FRAMES` to reduce OCR load
   - Possibly disable real‑time pacing (`realtime=False`) for offline batches.
 - **DB throughput**:
