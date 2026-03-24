@@ -9,37 +9,46 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 ## 📑 Table of Contents
 
 ### Overview
+
 - [Summary](#summary)
 - [What this project demonstrates](#what-this-project-demonstrates)
 - [Entrypoints](#entrypoints)
 
 ### Structure
+
 - [Repository Overview](#repository-overview)
 
 ### Architecture
+
 - [Core Engine Architecture](#core-engine-architecture-enginepy)
 - [Configuration Cheatsheet](#configuration-cheatsheet)
 
 ### Performance
+
 - [Tested Environment](#tested-environment)
 - [Performance Notes & Tips](#performance-notes--tips)
 
 ### Setup
+
 - [Install dependencies](#1-install-dependencies)
 - [MySQL setup](#2-mysql-setup)
 - [Download / place model weights](#3-download--place-model-weights)
 
 ### Training
+
 - [Training the YOLO License Plate Detector](#training-the-yolo-license-plate-detector)
 
 ### Usage
+
 - [Inference Entry Points](#inference-entry-points)
 
 ### Advanced
+
 - [Extending the Project](#extending-the-project)
   
 
 ## Summary
+
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
 - **End‑to‑end flow**: raw video → **YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
@@ -61,7 +70,7 @@ This is a **full, production‑style license plate recognition system**, not jus
 
 - **Live GUI demo** – overlay + FPS + DB + crops: `python stream_inference.py`  
 - **Headless real‑time stream** – no window, DB + crops: `python stream_headless_inference.py`  
-- **Offline batch (file → file)** – annotated video + DB + crops: `python offline_batch_inference.py`  
+- **Offline batch (file → file)** – annotated video + DB + crops: `python offline_batch_inference.py`
 
 ---
 ## Repository Overview
@@ -76,8 +85,8 @@ This is a **full, production‑style license plate recognition system**, not jus
 - `model/custom_bytetrackv2.yaml` – ByteTrack tracker configuration used by `engine.run`.
 - `runs/detect/train9/weights/last.pt` – default detector checkpoint path after training (path is configurable in the front‑end scripts).
 - `utils/export_TensorRT.py` – helper for exporting models to TensorRT (optional).
----
 
+---
 ## Core Engine Architecture (`engine.py`)
 
 The `run(...)` function in `engine.py` is the **single source of truth** for the pipeline; all front‑ends just configure and call it.
@@ -119,7 +128,7 @@ Each frame:
    - `cls` – class indices
    - `xyxy` – bounding boxes
    - `ids` – track IDs via `extract_ids_numpy`, which handles missing / weird `boxes.id` cases.
-3. For each detection:
+4. For each detection:
    - Skip non‑plate classes: `if c != 0: continue`.
    - Clamp box to `[0, w] × [0, h]`.
    - Compute width/height and area; discard if below `min_plate_w` or `min_plate_h`.
@@ -170,6 +179,7 @@ Only survivors pass into the temporal cache.
 This keeps the sharpest / largest view as the canonical sample.
 
 ### 6. DB insertion and cache flushing
+
 The writes are event-based and de-duplicated across track IDs:
 
 - Periodically, when some cached candidate has been missing for `>= 90` frames, the engine groups `ocr_cache` entries by their current `best_text`.
@@ -241,11 +251,9 @@ On exit, all OpenCV handles and DB resources are released.
   - `MIN_OCR_CHARS_LEN` and uniqueness / digit/letter checks are conservative filters to reduce false positives; you can relax them in controlled environments.
 
 ---
-
 ### 1. Install dependencies
 
 You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
-
 
 #### Option A: Conda 
 
@@ -259,7 +267,6 @@ conda activate lp
 - **CUDA**: If your driver uses an older toolkit, edit the yaml: e.g. `pytorch-cuda=12.1` or `pytorch-cuda=11.8` for CUDA 11.
 - **OCR**: Uses **`onnxruntime`** (CPU) by default. For this pipeline, CPU OCR gave me better FPS than GPU OCR
 
-
 #### Option B: Pip only (`requirements.txt`)
 
 If you already have Python 3.11 or prefer a venv you could use:
@@ -270,7 +277,6 @@ pip install -r requirements.txt
 
 - **`requirements.txt`** pins all core dependencies: `ultralytics`, `fast-plate-ocr`, `mysql-connector-python`, `opencv-python`, `numpy`, `protobuf`, `onnxruntime`. PyTorch and torchvision (CUDA 12.4 builds) included, so no separate PyTorch installation is required.
 - You can run inference on CPU only, but FPS will be very low. Also the OCR runs on CPU via `onnxruntime` and does not require CUDA.
-
 
 > **Note**: In `engine.py`, `ORT_TENSORRT_UNAVAILABLE=1` is set so the OCR model does not try to load TensorRT (avoids slow startup and DLL issues). You can change this if you use TensorRT and onnxruntime-gpu on purpose.
 
@@ -320,7 +326,6 @@ The OCR model name is configured by `ocr_model_name` in the entrypoints (passed 
 Make sure the OCR backend you are using supports this model name.
 
 ---
-
 ## Training the YOLO License Plate Detector
 
 The training script is intentionally minimal and uses Ultralytics’ high‑level API:
@@ -345,7 +350,6 @@ This will train a model and write checkpoints under a `runs/detect/...` director
 > **Assumption**: Class index **0** in your dataset corresponds to license plates. The engine explicitly filters detections with `if c != 0: continue`, so plates must be class 0.
 
 ---
-
 ## Inference Entry Points
 
 ### 1. `stream_inference.py` – interactive streaming (GUI)
@@ -426,7 +430,6 @@ python stream_headless_inference.py
 Configure **DB credentials** before running (they are left blank in the template).
 
 ---
-
 ## Extending the Project
 
 - **Different OCR backends**: As long as you provide a `LicensePlateRecognizer`‑like object with a `.run(image_gray)` method returning text (or list of text), the engine will work. Implement your own wrapper and update `init_models`.
