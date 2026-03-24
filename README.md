@@ -346,6 +346,7 @@ The training script is intentionally minimal and uses Ultralytics’ high‑leve
   - `batch=14`
   - `imgsz=960`
   - `save_period=3` – saves model weights every N epochs
+  - (kept default mosaic, which is 1.0 and last 10 epochs 0.0)
 
 Run:
 
