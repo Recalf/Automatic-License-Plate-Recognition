@@ -13,8 +13,7 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 - [What this project demonstrates](#what-this-project-demonstrates)
 - [Entrypoints](#entrypoints)
 
-### Environment & Structure
-- [Tested Environment](#tested-environment)
+### Structure
 - [Repository Overview](#repository-overview)
 
 ### Architecture
@@ -22,6 +21,7 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 - [Configuration Cheatsheet](#configuration-cheatsheet)
 
 ### Performance
+- [Tested Environment](#tested-environment)
 - [Performance Notes & Tips](#performance-notes--tips)
 
 ### Setup
@@ -64,13 +64,6 @@ This is a **full, production‑style license plate recognition system**, not jus
 - **Offline batch (file → file)** – annotated video + DB + crops: `python offline_batch_inference.py`  
 
 ---
-## Tested Environment
-
-- Python 3.11
-- PyTorch 2.6.0 (CUDA 12.4)
-- GPU: NVIDIA (CUDA 12.x compatible)
-- OS: Linux / Windows
-
 ## Repository Overview
 
 - **`requirements.txt`** – Core dependencies including PyTorch (CUDA 12.4 builds). Install with `pip install -r requirements.txt`.
@@ -205,7 +198,6 @@ On exit, all OpenCV handles and DB resources are released.
 
 ---
 
-
 ## Configuration Cheatsheet
 
 - **Detector & Tracker**
@@ -229,6 +221,13 @@ On exit, all OpenCV handles and DB resources are released.
   - `save_video_path` – path for annotated output video, or `None`.
   - `result_images_root` – parent folder where auto‑incremented run directories of cropped plates are stored.
 
+---
+## Tested Environment
+
+- Python 3.11
+- PyTorch 2.6.0 (CUDA 12.4)
+- GPU: NVIDIA (CUDA 12.x compatible)
+- OS: Linux / Windows
 ---
 
 ## Performance Notes & Tips
