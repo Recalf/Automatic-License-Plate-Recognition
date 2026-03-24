@@ -13,10 +13,8 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 - [Summary](#summary)
 - [What this project demonstrates](#what-this-project-demonstrates)
 - [Entrypoints](#entrypoints)
-
-### Structure
-
 - [Repository Overview](#repository-overview)
+
 
 ### Architecture
 
@@ -75,7 +73,7 @@ This is a **full, production‑style license plate recognition system**, not jus
 - **Offline batch (file → file)** – annotated video + DB + crops: `python offline_batch_inference.py`
 
 ---
-## Repository Overview
+### Repository Overview
 
 - **`requirements.txt`** – Core dependencies including PyTorch (CUDA 12.4 builds). Install with `pip install -r requirements.txt`.
 - **`environment.yaml`** – Conda env `lp`: Python 3.11, PyTorch 2.6.0 and CUDA 12.4 (via pytorch-cuda) plus all required dependencies. Use with `conda env create -f environment.yaml` for a single-command setup.
@@ -89,11 +87,13 @@ This is a **full, production‑style license plate recognition system**, not jus
 - `utils/export_TensorRT.py` – helper for exporting models to TensorRT (optional).
 
 ---
-## Core Engine Architecture (`engine.py`)
+## Architecture
+
+### Core Engine Architecture (`engine.py`)
 
 The `run(...)` function in `engine.py` is the **single source of truth** for the pipeline; all front‑ends just configure and call it.
 
-### 1. Model and DB initialization
+#### 1. Model and DB initialization
 
 - **YOLO detector + ByteTrack**:
   - Loaded via `YOLO(model_weights)` in `init_models`.
@@ -108,7 +108,7 @@ The `run(...)` function in `engine.py` is the **single source of truth** for the
 - **DB connection** (`init_db`):
   - Either a single `mysql.connector.connect(..., autocommit=True)` or a `MySQLConnectionPool` when `db_pool=True`.
 
-### 2. Frame pacing and timing
+#### 2. Frame pacing and timing
 
 To support both **real‑time streaming** and **offline batch** processing:
 
@@ -121,7 +121,7 @@ Effect:
 - `realtime=True` → pacing + frame dropping to approximate real time.
 - `realtime=False` → no waiting, maximum throughput.
 
-### 3. Detection, tracking, and plate cropping
+#### 3. Detection, tracking, and plate cropping
 
 Each frame:
 
@@ -136,7 +136,7 @@ Each frame:
    - Compute width/height and area; discard if below `min_plate_w` or `min_plate_h`.
    - Optionally draw a green rectangle when `draw_gui=True` or a writer is active.
 
-### 4. OCR pre‑processing and quality control
+#### 4. OCR pre‑processing and quality control
 
 **Pre‑processing** (`preprocess_plate_for_ocr`):
 
@@ -158,7 +158,7 @@ Each frame:
 
 Only survivors pass into the temporal cache.
 
-### 5. Temporal aggregation and “best sample” selection
+#### 5. Temporal aggregation and “best sample” selection
 
 `ocr_cache` (per `track_id`) stores:
 
@@ -180,7 +180,7 @@ Only survivors pass into the temporal cache.
 
 This keeps the sharpest / largest view as the canonical sample.
 
-### 6. DB insertion and cache flushing
+#### 6. DB insertion and cache flushing
 
 The writes are event-based and de-duplicated across track IDs:
 
@@ -195,7 +195,7 @@ On shutdown, any remaining tracks with `best_text` are flushed the same way.
 
 DB errors are logged as `[DB ERROR] ...` and do **not** abort the loop.
 
-### 7. Visualization & output
+#### 7. Visualization & output
 
 - If `draw_gui=True`:
   - Draw bounding boxes and plate text boxes.
@@ -208,7 +208,7 @@ DB errors are logged as `[DB ERROR] ...` and do **not** abort the loop.
 
 On exit, all OpenCV handles and DB resources are released.
 
-## Configuration Cheatsheet
+### Configuration Cheatsheet
 
 - **Detector & Tracker**
   - `MODEL_WEIGHTS` – YOLO weights path in each front‑end script.
@@ -232,14 +232,16 @@ On exit, all OpenCV handles and DB resources are released.
   - `result_images_root` – parent folder where auto‑incremented run directories of cropped plates are stored.
 
 ---
-## Tested Environment
+## Performance
+
+### Tested Environment
 
 - Python 3.11
 - PyTorch 2.6.0 (CUDA 12.4)
 - GPU: NVIDIA (CUDA 12.x compatible)
 - OS: Linux / Windows
 
-## Performance Notes & Tips
+### Performance Notes & Tips
 
 - **GPU vs CPU**: For high‑resolution (`IMGSZ` ≥ 1408) and multi‑object tracking, GPU is strongly recommended. On CPU you may need to:
   - Lower `IMGSZ` (e.g., 640)
@@ -253,6 +255,8 @@ On exit, all OpenCV handles and DB resources are released.
   - `MIN_OCR_CHARS_LEN` and uniqueness / digit/letter checks are conservative filters to reduce false positives; you can relax them in controlled environments.
 
 ---
+## Setup
+
 ### 1. Install dependencies
 
 You can use **Conda** (recommended) or **pip only**. Both are pinned so the project runs the same on your machine.
@@ -328,7 +332,9 @@ The OCR model name is configured by `ocr_model_name` in the entrypoints (passed 
 Make sure the OCR backend you are using supports this model name.
 
 ---
-## Training the YOLO License Plate Detector
+## Training
+
+### Training the YOLO License Plate Detector
 
 The training script is intentionally minimal and uses Ultralytics’ high‑level API:
 
@@ -352,9 +358,11 @@ This will train a model and write checkpoints under a `runs/detect/...` director
 > **Assumption**: Class index **0** in your dataset corresponds to license plates. The engine explicitly filters detections with `if c != 0: continue`, so plates must be class 0.
 
 ---
-## Inference Entry Points
+## Usage
 
-### 1. `stream_inference.py` – interactive streaming (GUI)
+### Inference Entry Points
+
+#### 1. `stream_inference.py` – interactive streaming (GUI)
 
 **Purpose**:  
 Video in → real‑time YOLO + ByteTrack + OCR → live overlay window + MySQL + plate crops.
@@ -388,7 +396,7 @@ run(
 )
 ```
 
-### 2. `offline_batch_inference.py` – offline batch, file‑to‑file
+#### 2. `offline_batch_inference.py` – offline batch, file‑to‑file
 
 **Purpose**:  
 Process a video file **as fast as possible** (no GUI) into:
@@ -408,7 +416,7 @@ Run:
 python offline_batch_inference.py
 ```
 
-### 3. `stream_headless_inference.py` – online, headless streaming
+#### 3. `stream_headless_inference.py` – online, headless streaming
 
 **Purpose**:  
 Real‑time inference **without** GUI or output video:
@@ -432,7 +440,9 @@ python stream_headless_inference.py
 Configure **DB credentials** before running (they are left blank in the template).
 
 ---
-## Extending the Project
+## Advanced
+
+### Extending the Project
 
 - **Different OCR backends**: As long as you provide a `LicensePlateRecognizer`‑like object with a `.run(image_gray)` method returning text (or list of text), the engine will work. Implement your own wrapper and update `init_models`.
 - **Alternative tracking**: You can experiment with different tracker configs in the `model/` directory and pass them via the `tracker` argument to `run(...)`.
