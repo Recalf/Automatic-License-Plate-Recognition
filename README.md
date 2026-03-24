@@ -1,3 +1,5 @@
+# Real-Time License Plate Recognition System
+
 ![Project Thumbnail](milad-fakurian-sin5WZzF1U0-unsplash.jpg)
 
 # 🎬 1-Minute Live Demo
