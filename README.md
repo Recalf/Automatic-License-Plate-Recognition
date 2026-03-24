@@ -196,8 +196,6 @@ DB errors are logged as `[DB ERROR] ...` and do **not** abort the loop.
 
 On exit, all OpenCV handles and DB resources are released.
 
----
-
 ## Configuration Cheatsheet
 
 - **Detector & Tracker**
@@ -228,7 +226,6 @@ On exit, all OpenCV handles and DB resources are released.
 - PyTorch 2.6.0 (CUDA 12.4)
 - GPU: NVIDIA (CUDA 12.x compatible)
 - OS: Linux / Windows
----
 
 ## Performance Notes & Tips
 
