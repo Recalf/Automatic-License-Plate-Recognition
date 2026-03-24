@@ -2,8 +2,8 @@
 
 ![Project Thumbnail](milad-fakurian-sin5WZzF1U0-unsplash.jpg)
 
-# 🎬 1-Minute Live Demo
-[Watch the demo](https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=sharing)
+## 🎬 1-Minute Live Demo
+https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=sharing
 
 
 ## 📑 Table of Contents
@@ -39,7 +39,7 @@
 - [Extending the Project](#extending-the-project)
   
 
-# Summary
+## Summary
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
 - **End‑to‑end flow**: raw video → **YOLO detection** → **ByteTrack multi‑object tracking** → **plate OCR with strict post‑filtering** → **MySQL persistence + cropped plate images**.
