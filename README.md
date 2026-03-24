@@ -9,7 +9,7 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 ### Overview
 - [Summary](#summary)
 - [What this project demonstrates](#what-this-project-demonstrates)
-- [How to run it (entrypoints)](#how-to-run-it-entrypoints)
+- [Entrypoints](#entrypoints)
 
 ### Environment & Structure
 - [Tested Environment](#tested-environment)
@@ -55,7 +55,7 @@ This is a **full, production‑style license plate recognition system**, not jus
   - Practical pre‑processing (2x upscale + grayscale + sharpen; CLAHE tested but disabled) tuned for OCR robustness.
 - **Extensible architecture**: pluggable OCR backend and tracker config; DB write path that can be swapped for APIs, queues, or other sinks.
 
-### How to run it (entrypoints)
+### Entrypoints
 
 - **Live GUI demo** – overlay + FPS + DB + crops: `python stream_inference.py`  
 - **Headless real‑time stream** – no window, DB + crops: `python stream_headless_inference.py`  
