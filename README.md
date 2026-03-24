@@ -3,6 +3,40 @@
 # 🎬 1-Minute Live Demo
 https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=sharing
 
+
+## 📑 Table of Contents
+
+### Overview
+- [Summary](#summary)
+- [What this project demonstrates](#what-this-project-demonstrates)
+- [How to run it (entrypoints)](#how-to-run-it-entrypoints)
+
+### Environment & Structure
+- [Tested Environment](#tested-environment)
+- [Repository Overview](#repository-overview)
+
+### Architecture
+- [Core Engine Architecture](#core-engine-architecture-enginepy)
+- [Configuration Cheatsheet](#configuration-cheatsheet)
+
+### Performance
+- [Performance Notes & Tips](#performance-notes--tips)
+
+### Setup
+- [Install dependencies](#1-install-dependencies)
+- [MySQL setup](#2-mysql-setup)
+- [Download / place model weights](#3-download--place-model-weights)
+
+### Training
+- [Training the YOLO License Plate Detector](#training-the-yolo-license-plate-detector)
+
+### Usage
+- [Inference Entry Points](#inference-entry-points)
+
+### Advanced
+- [Extending the Project](#extending-the-project)
+  
+
 # Summary
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
