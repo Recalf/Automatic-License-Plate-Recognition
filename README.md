@@ -47,7 +47,9 @@ https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=shari
 - [Extending the Project](#extending-the-project)
   
 
-## Summary
+## Overview
+
+### Summary
 
 This is a **full, production‑style license plate recognition system**, not just a single model.
 
