@@ -209,8 +209,8 @@ On exit, all OpenCV handles and DB resources are released.
 - **Detector & Tracker**
   - `MODEL_WEIGHTS` – YOLO weights path in each front‑end script.
   - `TRACKER` – ByteTrack config YAML (`model/custom_bytetrackv2.yaml`).
-  - `CONF` – detection confidence threshold.
-  - `IMGSZ` – inference resolution (higher is more accurate but slower).
+  - `CONF` – YOLO detection confidence threshold.
+  - `IMGSZ` – YOLO inference resolution (higher is more accurate but slower).
 - **OCR**
   - `OCR_MODEL_NAME` – OCR model name for `LicensePlateRecognizer`.
   - `OCR_CONF` – minimum OCR confidence (mean per-character confidence) to accept a candidate.
