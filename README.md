@@ -3,7 +3,7 @@
 ![Project Thumbnail](milad-fakurian-sin5WZzF1U0-unsplash.jpg)
 
 # 🎬 1-Minute Live Demo
-https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=sharing
+[Watch the demo](https://drive.google.com/file/d/1ADcJ2MZzeHz0UhCKbCBBpWKSe56JtM7-/view?usp=sharing)
 
 
 ## 📑 Table of Contents
