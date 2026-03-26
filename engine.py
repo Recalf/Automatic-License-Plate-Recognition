@@ -10,7 +10,7 @@ from ultralytics import YOLO
 from fast_plate_ocr import LicensePlateRecognizer
 
 
-os.environ["ORT_TENSORRT_UNAVAILABLE"] = "1" # this disables TensorRT (if available), the ocr model takes little bit too long to load with it  
+os.environ["ORT_TENSORRT_UNAVAILABLE"] = "1" # this disables TensorRT (if available), the ocr model takes little bit too long to load without disabling it
 
 def init_models(model_weights, ocr_model_name):
     model = YOLO(model_weights)
